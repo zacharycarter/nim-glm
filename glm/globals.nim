@@ -1,1 +1,1 @@
-const GLM_LEFT_HAND* = false
+const GLM_LEFT_HAND* = true

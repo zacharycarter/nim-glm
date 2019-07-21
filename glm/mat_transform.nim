@@ -121,24 +121,24 @@ proc ortho*[T]( left, right, bottom, top, zNear, zFar:T): Mat4[T] =
     result[3,2] = -(zFar + zNear) / (zFar - zNear)
     result[3,3] = 1
 
-proc perspectiveLH*[T]( fovy, aspect, zNear, zFar:T): Mat4[T] =
+proc perspectiveLH*[T]( fovy, aspect, zNear, zFar:T, homogeneousNdc: bool): Mat4[T] =
     let tanHalfFovy = tan(fovy / T(2))
     result = mat4[T](0.0)
     result[0,0] = T(1) / (aspect * tanHalfFovy)
     result[1,1] = T(1) / (tanHalfFovy)
-    result[2,2] = (zFar + zNear) / (zFar - zNear)
+    result[2,2] = if homogeneousNdc: (zFar + zNear) / (zFar - zNear) else: zFar / (zFar - zNear)
     result[2,3] = T(1)
-    result[3,2] = - (T(2) * zFar * zNear) / (zFar - zNear)
+    result[3,2] = if homogeneousNdc: - (T(2) * zFar * zNear) / (zFar - zNear) else: -(zFar * zNear) / (zFar - zNear)
 
-proc perspectiveRH*[T]( fovy, aspect, zNear, zFar:T): Mat4[T] =
+proc perspectiveRH*[T]( fovy, aspect, zNear, zFar:T, homogeneousNdc: bool): Mat4[T] =
     let tanHalfFovy = tan(fovy / T(2))
     result = mat4[T](0.0)
     result[0,0] = T(1) / (aspect * tanHalfFovy)
     result[1,1] = T(1) / (tanHalfFovy)
     result[2,3] = T(-1)
 
-    result[2,2] = -(zFar + zNear) / (zFar - zNear)
-    result[3,2] = -(T(2) * zFar * zNear) / (zFar - zNear)
+    result[2,2] = if homogeneousNdc: -(zFar + zNear) / (zFar - zNear) else: zFar / (zNear - zFar)
+    result[3,2] = if homogeneousNdc: -(T(2) * zFar * zNear) / (zFar - zNear) else: -(zFar * zNear) / (zFar - zNear)
 
 proc lookAtRH*[T](eye,center,up:Vec3[T]): Mat4[T] =
     let
@@ -177,13 +177,13 @@ proc frustum*[T](left, right, bottom, top, near, far: T): Mat4[T] =
 
 
 when GLM_LEFT_HAND:
-    proc perspective*[T]( fovy, aspect, zNear, zFar:T):Mat4[T]=
-        perspectiveLH(fovy, aspect, zNear, zFar)
+    proc perspective*[T]( fovy, aspect, zNear, zFar:T, homogeneousNdc: bool):Mat4[T]=
+        perspectiveLH(fovy, aspect, zNear, zFar, homogeneousNdc)
     proc lookAt*[T](eye,center,up:Vec3[T]):Mat4[T]=
         lookAtLH(eye,center, up)
 else:
-    proc perspective*[T]( fovy, aspect, zNear, zFar:T):Mat4[T]=
-        perspectiveRH(fovy, aspect, zNear, zFar)
+    proc perspective*[T]( fovy, aspect, zNear, zFar:T, homogeneousNdc: bool):Mat4[T]=
+        perspectiveRH(fovy, aspect, zNear, zFar, homogeneousNdc)
     proc lookAt*[T](eye,center,up:Vec3[T]):Mat4[T]=
         lookAtRH(eye, center, up)
 
